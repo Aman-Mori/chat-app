@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css"> <!-- Your CSS -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+        
+        <!-- Admin Login Form -->
+        <div id="admin-login">
+            <h2>Admin Login</h2>
+            <form id="admin-login-form">
+                <input type="password" id="admin-password" placeholder="Enter Admin Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div id="admin-message" class="response-message"></div>
+        </div>
+
+        <!-- Delete Room Form -->
+        <div id="delete-room-section" style="display: none;">
+            <form id="delete-room-form" class="form">
+                <label for="delete-room-id">Enter Room ID to Delete:</label>
+                <input type="text" id="delete-room-id" placeholder="Room ID" required>
+                <input type="password" id="delete-room-password" placeholder="Room Password" required>
+                <button type="submit">Delete Room</button>
+            </form>
+            <div id="response-message" class="response-message"></div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
