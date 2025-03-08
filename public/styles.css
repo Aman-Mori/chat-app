@@ -316,4 +316,38 @@ button.join-room-btn {
 
 button.join-room-btn:hover {
   background-color: #45a049;
+}#chat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background-color: #eae6df; /* WhatsApp chat background */
+  height: 400px;
+  overflow-y: auto;
+  border-radius: 10px;
 }
+
+.message {
+  padding: 8px 12px;
+  border-radius: 18px;
+  max-width: 60%;
+  word-wrap: break-word;
+}
+
+.my-message {
+  background-color: #ffffff; /* WhatsApp green */
+  color: #000000; /* White text */
+  text-align: right;
+  margin-left: auto; /* Align to right */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* WhatsApp shadow effect */
+}
+
+.other-message {
+  background-color: #ffffff; /* White bubble */
+  color: #000; /* Black text */
+  text-align: left;
+  margin-right: auto; /* Align to left */
+  border: 1px solid #d1d7db; /* WhatsApp message border */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* WhatsApp shadow effect */
+}
+
