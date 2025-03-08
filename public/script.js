@@ -45,7 +45,7 @@ fetchRoomsBtn.addEventListener('click', (e) => {
 
 // Display available rooms in the table
 socket.on('available-rooms', (rooms) => {
-    roomsTableBody.innerHTML = ''; // Clear previous entries
+    roomsTableBody.innerHTML = '';
     rooms.forEach(room => {
         const row = document.createElement('tr');
         row.innerHTML = 
@@ -55,14 +55,13 @@ socket.on('available-rooms', (rooms) => {
         roomsTableBody.appendChild(row);
     });
 
-    // Add event listeners for the join buttons
     document.querySelectorAll('.join-room-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const roomId = btn.getAttribute('data-room-id');
             const username = document.getElementById('join-username').value.trim();
             const password = prompt(`Enter password for room ${roomId}:`);
             if (password) {
-                socket.emit('set-username', username); // Set username before joining
+                socket.emit('set-username', username);
                 socket.emit('join-room', { username, roomId, password });
             }
         });
@@ -79,7 +78,7 @@ createRoomForm.addEventListener('submit', (e) => {
     const maxUsers = parseInt(document.getElementById('create-max-users').value, 10);
 
     if (username && roomId && password && maxUsers) {
-        socket.emit('set-username', username); // Set username before creating the room
+        socket.emit('set-username', username);
         socket.emit('create-room', { username, roomId, password, maxUsers });
         preChatForm.classList.add('hidden');
         chatApp.classList.remove('hidden');
@@ -91,18 +90,35 @@ createRoomForm.addEventListener('submit', (e) => {
 sendChatBtn.addEventListener('click', () => {
     const message = chatInput.value.trim();
     if (message) {
-        socket.emit('send-message', message);
-        chatInput.value = ''; // Clear input after sending
+        socket.emit('send-message', message); 
+        chatInput.value = ''; 
     }
 });
 
 // Display received messages
 socket.on('receive-message', (data) => {
-    const newMessage = document.createElement('p');
+    const newMessage = document.createElement('div');
+    const isMyMessage = data.username === document.getElementById('create-username').value.trim() || 
+                        data.username === document.getElementById('join-username').value.trim();
+
+    newMessage.className = isMyMessage ? 'message my-message' : 'message other-message';
     newMessage.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
     chatBox.appendChild(newMessage);
-    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
+    chatBox.scrollTop = chatBox.scrollHeight; 
 });
+
+// Function to display messages
+function displayMessage(message, sender) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', sender === 'you' ? 'sent' : 'received');
+
+    const messageContent = document.createElement('p');
+    messageContent.textContent = message;
+
+    messageDiv.appendChild(messageContent);
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+}
 
 // Handle successful room join
 socket.on('join-success', (roomId) => {
@@ -111,8 +127,8 @@ socket.on('join-success', (roomId) => {
     roomNameDisplay.textContent = roomId;
 });
 
-// Handle errors (e.g., wrong password or room full)
+// Handle errors
 socket.on('room-error', (errorMessage) => {
     alert(errorMessage);
-    location.reload(); // Reload page to restart form
+    location.reload();
 });
