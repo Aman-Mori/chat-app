@@ -404,24 +404,26 @@ tr:hover {
 /* ===================================== */
 /* MOBILE RESPONSIVE */
 /* ===================================== */
-
 @media (max-width: 600px) {
 
   #chat-container {
     padding: 10px;
   }
 
+  /* ✅ KEEP SIDE BY SIDE LIKE DESKTOP */
   #chat-input-container {
-    flex-direction: column;
+    display: flex;
+    flex-direction: row;   /* FIX: row force */
     gap: 10px;
+    align-items: center;
   }
 
   #chat-input {
-    width: 100%;
+    width: 80%;           /* same as desktop feel */
   }
 
   #send-chat-btn {
-    width: 100%;
+    width: 20%;           /* button side me hi rahega */
   }
 
   #file-upload-container {
