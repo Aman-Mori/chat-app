@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const { addRoom, getRoom, deleteRoom, getAllRooms } = require('./database');
 
@@ -11,18 +12,14 @@ app.set('trust proxy', true);
 
 // Visitor tracking logs
 app.use((req, res, next) => {
-
-    // Get real IP
     const forwarded = req.headers['x-forwarded-for'];
 
     const ip = forwarded
         ? forwarded.split(',')[0].trim()
         : req.socket.remoteAddress;
 
-    // Browser info
     const userAgent = req.headers['user-agent'] || '';
 
-    // Detect browser
     let browser = 'Unknown Browser';
 
     if (userAgent.includes('Brave')) {
@@ -37,49 +34,29 @@ app.use((req, res, next) => {
         browser = 'Edge';
     }
 
-    // Detect phone name/model
     let phone = 'Unknown Device';
 
-    // Samsung
     const samsungMatch = userAgent.match(/SM-[A-Z0-9]+/);
-    if (samsungMatch) {
-        phone = samsungMatch[0];
-    }
+    if (samsungMatch) phone = samsungMatch[0];
 
-    // Redmi / Xiaomi
     const redmiMatch = userAgent.match(/Redmi[\w\s\d-]+/);
-    if (redmiMatch) {
-        phone = redmiMatch[0];
-    }
+    if (redmiMatch) phone = redmiMatch[0];
 
-    // iPhone
-    if (userAgent.includes('iPhone')) {
-        phone = 'iPhone';
-    }
+    if (userAgent.includes('iPhone')) phone = 'iPhone';
 
-    // Realme
     const realmeMatch = userAgent.match(/RMX\d+/);
-    if (realmeMatch) {
-        phone = realmeMatch[0];
-    }
+    if (realmeMatch) phone = realmeMatch[0];
 
-    // Vivo
     const vivoMatch = userAgent.match(/V\d{4}/);
-    if (vivoMatch) {
-        phone = vivoMatch[0];
-    }
+    if (vivoMatch) phone = vivoMatch[0];
 
-    // Oppo
     const oppoMatch = userAgent.match(/CPH\d+/);
-    if (oppoMatch) {
-        phone = oppoMatch[0];
-    }
+    if (oppoMatch) phone = oppoMatch[0];
 
     console.log('==============================');
     console.log('IP:', ip);
     console.log('Browser:', browser);
     console.log('Phone:', phone);
-    console.log('User-Agent:', userAgent);
     console.log('Time:', new Date().toISOString());
     console.log('==============================');
 
@@ -93,10 +70,15 @@ const io = new Server(server);
 app.use(express.static('public'));
 app.use(express.json());
 
+// ✅ FIX: HOME ROUTE (IMPORTANT FOR RENDER)
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 // Room storage
 const rooms = {};
 
-// Handle socket connection
+// Socket connection
 io.on('connection', (socket) => {
 
     console.log('A user connected:', socket.id);
@@ -104,15 +86,7 @@ io.on('connection', (socket) => {
     let currentRoom = null;
     let username = '';
 
-    // Create room
-    socket.on('create-room', async ({
-        username: newUsername,
-        roomId,
-        password,
-        maxUsers
-    }) => {
-
-        console.log(`Creating room: ${roomId}`);
+    socket.on('create-room', async ({ username: newUsername, roomId, password, maxUsers }) => {
 
         if (rooms[roomId]) {
             socket.emit('room-error', 'Room already exists.');
@@ -127,7 +101,6 @@ io.on('connection', (socket) => {
         }
 
         try {
-
             await addRoom(roomId, password, maxUsers);
 
             rooms[roomId] = {
@@ -140,10 +113,7 @@ io.on('connection', (socket) => {
             username = newUsername;
             currentRoom = roomId;
 
-            rooms[roomId].users.push({
-                username,
-                id: socket.id
-            });
+            rooms[roomId].users.push({ username, id: socket.id });
 
             socket.emit('join-success', roomId);
 
@@ -153,39 +123,16 @@ io.on('connection', (socket) => {
             });
 
         } catch (error) {
-
-            console.error('Error creating room:', error);
-
-            socket.emit(
-                'room-error',
-                'Error creating room. Try again later.'
-            );
+            socket.emit('room-error', 'Error creating room.');
         }
     });
 
-    // Fetch rooms
     socket.on('fetch-available-rooms', async () => {
-
-        try {
-
-            const allRooms = await getAllRooms();
-
-            socket.emit('available-rooms', allRooms);
-
-        } catch (error) {
-
-            console.error(error);
-        }
+        const allRooms = await getAllRooms();
+        socket.emit('available-rooms', allRooms);
     });
 
-    // Join room
-    socket.on('join-room', async ({
-        username: newUsername,
-        roomId,
-        password
-    }) => {
-
-        console.log(`User ${newUsername} trying to join room: ${roomId}`);
+    socket.on('join-room', async ({ username: newUsername, roomId, password }) => {
 
         const room = rooms[roomId];
         const dbRoom = await getRoom(roomId);
@@ -207,10 +154,7 @@ io.on('connection', (socket) => {
             username = newUsername;
             currentRoom = roomId;
 
-            room.users.push({
-                username,
-                id: socket.id
-            });
+            room.users.push({ username, id: socket.id });
 
             socket.emit('join-success', roomId);
 
@@ -220,27 +164,19 @@ io.on('connection', (socket) => {
             });
 
         } else {
-
-            socket.emit(
-                'room-error',
-                'Room is full or does not exist.'
-            );
+            socket.emit('room-error', 'Room is full or does not exist.');
         }
     });
 
-    // Send message
     socket.on('send-message', (message) => {
-
         if (currentRoom) {
-
             io.to(currentRoom).emit('receive-message', {
-                username: username,
-                message: message,
+                username,
+                message,
             });
         }
     });
 
-    // Delete room
     socket.on('delete-room', async ({ roomId, password }) => {
 
         const dbRoom = await getRoom(roomId);
@@ -255,42 +191,21 @@ io.on('connection', (socket) => {
             return;
         }
 
-        try {
+        await deleteRoom(roomId);
 
-            await deleteRoom(roomId);
+        delete rooms[roomId];
 
-            delete rooms[roomId];
-
-            socket.emit(
-                'room-deleted',
-                `Room ${roomId} deleted successfully.`
-            );
-
-        } catch (error) {
-
-            console.error('Error deleting room:', error);
-
-            socket.emit(
-                'room-error',
-                'Error deleting room.'
-            );
-        }
+        socket.emit('room-deleted', `Room ${roomId} deleted successfully.`);
     });
 
-    // Disconnect
     socket.on('disconnect', () => {
-
-        console.log('User disconnected:', socket.id);
 
         if (currentRoom && username) {
 
             const room = rooms[currentRoom];
 
             if (room) {
-
-                room.users = room.users.filter(
-                    user => user.id !== socket.id
-                );
+                room.users = room.users.filter(u => u.id !== socket.id);
 
                 io.to(currentRoom).emit('receive-message', {
                     username: 'System',
