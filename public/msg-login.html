@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Msg For @@</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+    background:#111318;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:350px;
+    background:#1b1f27;
+    padding:30px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 0 20px rgba(0,0,0,.3);
+}
+
+h1{
+    color:#fff;
+    margin-bottom:25px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:none;
+    border-radius:8px;
+    outline:none;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:15px;
+    border:none;
+    border-radius:8px;
+    background:#4b5cff;
+    color:#fff;
+    cursor:pointer;
+    font-size:16px;
+    transition:.3s;
+}
+
+button:hover{
+    background:#3949db;
+}
+
+#error{
+    color:#ff5b5b;
+    margin-top:15px;
+    font-size:14px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Msg For @@</h1>
+
+<input
+id="username"
+type="text"
+placeholder="Username @@">
+
+<input
+id="password"
+type="password"
+placeholder="Chat Room Password">
+
+<button onclick="login()">
+Login
+</button>
+
+<p id="error"></p>
+
+</div>
+
+<script>
+
+function login(){
+
+const username=document.getElementById("username").value.trim();
+const password=document.getElementById("password").value.trim();
+
+if(username==="@@" && password==="340"){
+
+window.location.href="msg-dashboard.html";
+
+}else{
+
+document.getElementById("error").innerText="Wrong Username or Password";
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
