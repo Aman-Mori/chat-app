@@ -87,73 +87,6 @@ const upload = multer({
     fileFilter
 });
 
-// Visitor tracking logs
-app.use((req, res, next) => {
-
-    const forwarded = req.headers['x-forwarded-for'];
-
-    const ip = forwarded
-        ? forwarded.split(',')[0].trim()
-        : req.socket.remoteAddress;
-
-    const userAgent = req.headers['user-agent'] || '';
-
-    let browser = 'Unknown Browser';
-
-    if (userAgent.includes('Brave')) {
-        browser = 'Brave';
-    } else if (userAgent.includes('Chrome')) {
-        browser = 'Chrome';
-    } else if (userAgent.includes('Firefox')) {
-        browser = 'Firefox';
-    } else if (userAgent.includes('Safari')) {
-        browser = 'Safari';
-    } else if (userAgent.includes('Edge')) {
-        browser = 'Edge';
-    }
-
-    let phone = 'Unknown Device';
-
-    const samsungMatch = userAgent.match(/SM-[A-Z0-9]+/);
-    if (samsungMatch) {
-        phone = samsungMatch[0];
-    }
-
-    const redmiMatch = userAgent.match(/Redmi[\w\s\d-]+/);
-    if (redmiMatch) {
-        phone = redmiMatch[0];
-    }
-
-    if (userAgent.includes('iPhone')) {
-        phone = 'iPhone';
-    }
-
-    const realmeMatch = userAgent.match(/RMX\d+/);
-    if (realmeMatch) {
-        phone = realmeMatch[0];
-    }
-
-    const vivoMatch = userAgent.match(/V\d{4}/);
-    if (vivoMatch) {
-        phone = vivoMatch[0];
-    }
-
-    const oppoMatch = userAgent.match(/CPH\d+/);
-    if (oppoMatch) {
-        phone = oppoMatch[0];
-    }
-
-    console.log('==============================');
-    console.log('IP:', ip);
-    console.log('Browser:', browser);
-    console.log('Phone:', phone);
-    console.log('User-Agent:', userAgent);
-    console.log('Time:', new Date().toISOString());
-    console.log('==============================');
-
-    next();
-});
-
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -166,6 +99,86 @@ app.use('/uploads', express.static('uploads'));
 
 // Room storage
 const rooms = {};
+
+// ===============================
+// SOCKET.IO VISITOR LOGGING
+// ===============================
+
+function formatDateTime(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+
+    hours = hours % 12;
+    hours = hours === 0 ? 12 : hours;
+
+    const formattedHours = String(hours).padStart(2, '0');
+
+    return `${day}-${month}-${year} ${formattedHours}:${minutes} ${ampm}`;
+}
+
+function getVisitorIp(socket) {
+    const forwarded = socket.handshake.headers['x-forwarded-for'];
+
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+
+    return socket.handshake.address || '';
+}
+
+function getBrowserName(userAgent = '') {
+    if (userAgent.includes('Brave')) {
+        return 'Brave';
+    } else if (userAgent.includes('Edg')) {
+        return 'Edge';
+    } else if (userAgent.includes('Chrome')) {
+        return 'Chrome';
+    } else if (userAgent.includes('Firefox')) {
+        return 'Firefox';
+    } else if (userAgent.includes('Safari')) {
+        return 'Safari';
+    }
+
+    return 'Unknown Browser';
+}
+
+function getDeviceName(userAgent = '') {
+    const samsungMatch = userAgent.match(/SM-[A-Z0-9]+/);
+    if (samsungMatch) {
+        return samsungMatch[0];
+    }
+
+    const redmiMatch = userAgent.match(/Redmi[\w\s\d-]+/);
+    if (redmiMatch) {
+        return redmiMatch[0].trim();
+    }
+
+    if (userAgent.includes('iPhone')) {
+        return 'iPhone';
+    }
+
+    const realmeMatch = userAgent.match(/RMX\d+/);
+    if (realmeMatch) {
+        return realmeMatch[0];
+    }
+
+    const vivoMatch = userAgent.match(/V\d{4}/);
+    if (vivoMatch) {
+        return vivoMatch[0];
+    }
+
+    const oppoMatch = userAgent.match(/CPH\d+/);
+    if (oppoMatch) {
+        return oppoMatch[0];
+    }
+
+    return 'Unknown Device';
+}
 
 // ===============================
 // FILE UPLOAD ROUTE
@@ -203,7 +216,18 @@ app.post('/upload', upload.single('file'), (req, res) => {
 // Handle socket connection
 io.on('connection', (socket) => {
 
-    console.log('A user connected:', socket.id);
+    const userAgent = socket.handshake.headers['user-agent'] || '';
+    const visitorIp = getVisitorIp(socket);
+    const browser = getBrowserName(userAgent);
+    const device = getDeviceName(userAgent);
+    const joinedAt = formatDateTime(new Date());
+
+    console.log('========== VISITOR ==========');
+    console.log(`IP       : ${visitorIp}`);
+    console.log(`Device   : ${device}`);
+    console.log(`Browser  : ${browser}`);
+    console.log(`Joined   : ${joinedAt}`);
+    console.log('=============================');
 
     let currentRoom = null;
     let username = '';
@@ -406,7 +430,10 @@ io.on('connection', (socket) => {
     // Disconnect
     socket.on('disconnect', () => {
 
-        console.log('User disconnected:', socket.id);
+        console.log('----------- LEFT ------------');
+        console.log(`IP       : ${visitorIp}`);
+        console.log(`Exit     : ${formatDateTime(new Date())}`);
+        console.log('-----------------------------');
 
         if (currentRoom && username) {
 
